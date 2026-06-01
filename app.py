@@ -122,33 +122,49 @@ elif st.session_state.page == 'output_view':
     v_observed_vel = st.session_state.v_observed_vel
     v_baryonic_mass = st.session_state.v_baryonic_mass
     
-    # 🌌 القسم الحسابي القائم على الثوابت الرياضية والقوانين لتفسير وتحليل منحنيات الدوران
+    # 🌌 القسم الحسابي القائم على المعايرة الحتمية لمتجهات الوسط لتعويض المادة المظلمة
     YOUSEF_EQUILIBRIUM = 1e-11        # ثابت الاتزان
     YOUSEF_RESISTANCE = 3e20          # ثابت المقاومة الهيكلية للوسط
     
     # تحويل نصف القطر من سنة ضوئية إلى أمتار للضبط الحسابي الدقيق
     radius_meters = v_radius * 9.461e15
     
-    # تطبيق قانون حساب المقاومة الحركية الناتجة عن الوسط (كمتغير تفسيري ديناميكي للمادة المظلمة)
-    calculated_resistance = (v_observed_vel ** 2) * radius_meters / YOUSEF_RESISTANCE
+    # تحويل السرعة المرصودة إلى م/ث لحساب متسق مع جملة الوحدات الدولية
+    v_meters_per_sec = v_observed_vel * 1000
     
-    # حساب النسبة المئوية الميكانيكية المكافئة للكتلة المفقودة بناءً على القوانين التفسيرية
-    dark_matter_ratio = (calculated_resistance / (v_baryonic_mass + 1e-5)) * 100
-    dark_matter_ratio = max(12.45, min(96.80, dark_matter_ratio)) # حدود فيزيائية معيارية للمنظومة
+    # ثابت الجاذبية القياسي لغايات المعايرة المقارنة
+    G_constant = 6.6743e-11
     
+    # 1. حساب الكتلة الديناميكية الكلية (Total Dynamical Mass) المطلوبة لإنتاج هذه السرعة بناءً على ثابت المقاومة
+    # المعادلة المحدثة لربط التسارع الدورانى الرصدي بمتغيرات الوسط هيدروليكياً وميكانيكياً
+    calculated_total_mass = (v_meters_per_sec ** 2) * radius_meters / (G_constant * 2e30)
+    
+    # 2. قياس فجوة العجز بين الكتلة الكلية الناتجة والكتلة الباريونية المدخلة لاستخراج النسبة المئوية الدقيقة
+    if calculated_total_mass > v_baryonic_mass:
+        dark_matter_ratio = ((calculated_total_mass - v_baryonic_mass) / calculated_total_mass) * 100
+    else:
+        # نسبة توازن دنيا معيارية في حال تقارب الكتل في المراكز الداكنة
+        dark_matter_ratio = (1.0 - (calculated_total_mass / (v_baryonic_mass + 1e-5))) * 100
+    
+    # ضبط الحدود الرياضية لتطابق توزيع المنحنيات الكونية القياسية بين 15% و 95%
+    dark_matter_ratio = max(15.22, min(94.85, dark_matter_ratio))
+    
+    # قياس مؤشر التشوه الهيكلي للمنظومة الحركية
+    structural_index = (v_meters_per_sec ** 2) * radius_meters / YOUSEF_RESISTANCE
+
     # الاستنتاج الهيكلي لشكل وطبيعة حركة المنظومة بناءً على المتجهات الرياضية
-    if calculated_resistance > 0.5:
+    if structural_index > 0.005:
         galaxy_shape = "حلزونية ذروية (Spiral / Barred Spiral) ذات كثافة متجهة عالية وتماسك متزن في الأطراف الخارجية."
         galaxy_motion = "حركة دورانية دوامية منتظمة (Vortex Rotation) مدعومة بالمعادلات الهيكلية لتوازن الوسط."
         galaxy_direction = "تدفق متجهي حلزوني يتوسع هندسياً من النواة المركزية نحو أطراف توازن المنظومة الحركية."
-    elif calculated_resistance > 0.1:
+    elif structural_index > 0.001:
         galaxy_shape = "قرصية عدسية (Lenticular) مستقرة هندسياً ذات توزيع متجانس للمكونات الميكانيكية."
         galaxy_motion = "حركة مغلقة ذات انزياح دوراني ثابت ومقيد ميكانيكياً لمنع التشتت الهيكلي للمجرة."
         galaxy_direction = "اتجاه موازٍ تماماً لمستوى قرص المجرة الرئيسي مع انحناء طفيف عند الحدود الخارجية."
     else:
         galaxy_shape = "بيضاويـة (Elliptical) أو قزمة غير منتظمة محكومة بضغط حركي داخلي مرتفع."
         galaxy_motion = "حركة عشوائية عظمى للمكونات النجمية (Randomized Motion) يضبطها متجه توازن كلي يضمن التماسك البنيوي."
-        galaxy_direction = "متجهات متداخلة متناظرة كروياً تتجه نحو مركز الثقل الفيزيائي الفعل للمنظومة."
+        galaxy_direction = "متجهات متداخلة متناظرة كروياً تتجه نحو مركز الثقل الفيزيائي الفعلي للمنظومة."
 
     # عرض صندوق النتائج المصمم باحترافية ونصوص بيضاء عالية الوضوح
     st.markdown(f"""
@@ -191,7 +207,7 @@ elif st.session_state.page == 'output_view':
         st.session_state.page = 'input_view'
         st.rerun()
 
-# التذييل الاحترافي لتوثيق المنصة وحفظ الحقوق
+# التذييل الحقوقي والأكاديمي للمشروع
 st.markdown("""
 <p style='text-align: center; color: #4f5b66; font-size: 0.85rem; margin-top: 40px;'>منصة الحسابات الفيزيائية الحتمية الرصدية المحدودة © 2026</p>
 """, unsafe_allow_html=True)
